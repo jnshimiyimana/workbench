@@ -59,6 +59,7 @@ INSTALLED_APPS = [
         "workbench.reporting",
         "workbench.services",
         "workbench.timer",
+        "workbench.website_testing",
         "debug_toolbar" if DEBUG_TOOLBAR else "",
     ]
     if a

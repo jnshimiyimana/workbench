@@ -1,0 +1,557 @@
+{% extends "base.html" %}
+{% load bootstrap4 %}
+
+{% block title %}Test Results: {{ test.url|truncatechars:50 }} - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1>Test Results</h1>
+                    <p class="text-muted mb-0">{{ test.url }}</p>
+                </div>
+                <div>
+                    <a href="{% url 'website_testing:dashboard' %}" class="btn btn-outline-secondary">
+                        <i class="fa fa-arrow-left"></i> Back to Dashboard
+                    </a>
+                    {% if test.status == 'completed' %}
+                    <form method="post" action="{% url 'website_testing:rerun' test.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa fa-redo"></i> Rerun Test
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Test Status -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <strong>Status:</strong>
+                                    {% if test.status == 'completed' %}
+                                        <span class="badge badge-success">Completed</span>
+                                    {% elif test.status == 'running' %}
+                                        <span class="badge badge-info">Running</span>
+                                    {% elif test.status == 'pending' %}
+                                        <span class="badge badge-warning">Pending</span>
+                                    {% elif test.status == 'failed' %}
+                                        <span class="badge badge-danger">Failed</span>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-3">
+                                    <strong>Created:</strong> {{ test.created_at|date:"M d, Y H:i" }}
+                                </div>
+                                <div class="col-md-3">
+                                    <strong>Completed:</strong> 
+                                    {% if test.completed_at %}
+                                        {{ test.completed_at|date:"M d, Y H:i" }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-3">
+                                    <strong>Tested by:</strong> {{ test.tested_by.get_full_name|default:test.tested_by.email }}
+                                </div>
+                            </div>
+                            {% if test.error_message %}
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <div class="alert alert-danger">
+                                        <strong>Error:</strong> {{ test.error_message }}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if test.status == 'running' or test.status == 'pending' %}
+            <!-- Running/Pending Status -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body text-center py-5">
+                            <div class="spinner-border text-primary mb-3" role="status">
+                                <span class="sr-only">Testing...</span>
+                            </div>
+                            <h4>Test {{ test.status }}</h4>
+                            <p class="text-muted">Please wait while we analyze {{ test.url }}...</p>
+                            <p class="text-muted">This page will automatically refresh every 10 seconds.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <script>
+                // Auto-refresh for running tests
+                setTimeout(function() {
+                    location.reload();
+                }, 10000);
+            </script>
+            
+            {% elif test.status == 'completed' %}
+            <!-- Lighthouse Scores Overview -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    {% if performance %}
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h2 class="{% if performance.lighthouse_performance_score >= 90 %}text-success{% elif performance.lighthouse_performance_score >= 50 %}text-warning{% else %}text-danger{% endif %}">
+                                {{ performance.lighthouse_performance_score|default:"N/A" }}
+                            </h2>
+                            <p class="card-text">Performance</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="col-md-3">
+                    {% if accessibility %}
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h2 class="{% if accessibility.lighthouse_accessibility_score >= 90 %}text-success{% elif accessibility.lighthouse_accessibility_score >= 50 %}text-warning{% else %}text-danger{% endif %}">
+                                {{ accessibility.lighthouse_accessibility_score|default:"N/A" }}
+                            </h2>
+                            <p class="card-text">Accessibility</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="col-md-3">
+                    {% if ux %}
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h2 class="{% if ux.lighthouse_best_practices_score >= 90 %}text-success{% elif ux.lighthouse_best_practices_score >= 50 %}text-warning{% else %}text-danger{% endif %}">
+                                {{ ux.lighthouse_best_practices_score|default:"N/A" }}
+                            </h2>
+                            <p class="card-text">Best Practices</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="col-md-3">
+                    {% if seo %}
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h2 class="{% if seo.lighthouse_seo_score >= 90 %}text-success{% elif seo.lighthouse_seo_score >= 50 %}text-warning{% else %}text-danger{% endif %}">
+                                {{ seo.lighthouse_seo_score|default:"N/A" }}
+                            </h2>
+                            <p class="card-text">SEO</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Detailed Results -->
+            <div class="row">
+                <!-- Performance Metrics -->
+                {% if performance and test.include_performance %}
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fa fa-tachometer-alt"></i> Performance Metrics</h5>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-sm">
+                                <tr>
+                                    <td>Total Load Time</td>
+                                    <td>{{ performance.total_load_time|floatformat:0|default:"N/A" }}{% if performance.total_load_time %} ms{% endif %}</td>
+                                </tr>
+                                <tr>
+                                    <td>Time to First Byte</td>
+                                    <td>{{ performance.time_to_first_byte|floatformat:0|default:"N/A" }}{% if performance.time_to_first_byte %} ms{% endif %}</td>
+                                </tr>
+                                <tr>
+                                    <td>First Contentful Paint</td>
+                                    <td>{{ performance.first_contentful_paint|floatformat:0|default:"N/A" }}{% if performance.first_contentful_paint %} ms{% endif %}</td>
+                                </tr>
+                                <tr>
+                                    <td>Largest Contentful Paint</td>
+                                    <td>{{ performance.largest_contentful_paint|floatformat:0|default:"N/A" }}{% if performance.largest_contentful_paint %} ms{% endif %}</td>
+                                </tr>
+                                <tr>
+                                    <td>Time to Interactive</td>
+                                    <td>{{ performance.time_to_interactive|floatformat:0|default:"N/A" }}{% if performance.time_to_interactive %} ms{% endif %}</td>
+                                </tr>
+                                <tr>
+                                    <td>DOM Content Loaded</td>
+                                    <td>{{ performance.dom_content_loaded|floatformat:0|default:"N/A" }}{% if performance.dom_content_loaded %} ms{% endif %}</td>
+                                </tr>
+                                <tr>
+                                    <td>Cumulative Layout Shift</td>
+                                    <td>{{ performance.cumulative_layout_shift|floatformat:3|default:"N/A" }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Total Requests</td>
+                                    <td>{{ performance.total_requests|default:"N/A" }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Total Size</td>
+                                    <td>{{ performance.total_size_kb|floatformat:1|default:"N/A" }}{% if performance.total_size_kb %} KB{% endif %}</td>
+                                </tr>
+                                <tr>
+                                    <td>Uses Compression</td>
+                                    <td>
+                                        {% if performance.uses_gzip %}Gzip{% endif %}
+                                        {% if performance.uses_brotli %}{% if performance.uses_gzip %}, {% endif %}Brotli{% endif %}
+                                        {% if not performance.uses_gzip and not performance.uses_brotli %}No{% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Accessibility Metrics -->
+                {% if accessibility and test.include_accessibility %}
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fa fa-universal-access"></i> Accessibility Metrics</h5>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-sm">
+                                <tr>
+                                    <td>WCAG AA Compliant</td>
+                                    <td>
+                                        {% if accessibility.wcag_aa_compliant %}
+                                            <span class="badge badge-success">Yes</span>
+                                        {% elif accessibility.wcag_aa_compliant is False %}
+                                            <span class="badge badge-danger">No</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">Unknown</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Color Contrast Issues</td>
+                                    <td>
+                                        <span class="{% if accessibility.color_contrast_issues == 0 %}text-success{% else %}text-danger{% endif %}">
+                                            {{ accessibility.color_contrast_issues }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Missing Alt Text</td>
+                                    <td>
+                                        <span class="{% if accessibility.missing_alt_text_count == 0 %}text-success{% else %}text-danger{% endif %}">
+                                            {{ accessibility.missing_alt_text_count }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Missing ARIA Labels</td>
+                                    <td>
+                                        <span class="{% if accessibility.missing_aria_labels == 0 %}text-success{% else %}text-danger{% endif %}">
+                                            {{ accessibility.missing_aria_labels }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Keyboard Navigation Issues</td>
+                                    <td>
+                                        <span class="{% if accessibility.keyboard_navigation_issues == 0 %}text-success{% else %}text-danger{% endif %}">
+                                            {{ accessibility.keyboard_navigation_issues }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Screen Reader Compatible</td>
+                                    <td>
+                                        {% if accessibility.screen_reader_compatible %}
+                                            <span class="badge badge-success">Yes</span>
+                                        {% elif accessibility.screen_reader_compatible is False %}
+                                            <span class="badge badge-danger">No</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">Unknown</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- SEO Metrics -->
+                {% if seo and test.include_seo %}
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fa fa-search"></i> SEO Metrics</h5>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-sm">
+                                <tr>
+                                    <td>Has Title Tag</td>
+                                    <td>
+                                        {% if seo.has_title %}
+                                            <span class="badge badge-success">Yes</span>
+                                            {% if seo.title_length %}({{ seo.title_length }} chars){% endif %}
+                                        {% else %}
+                                            <span class="badge badge-danger">No</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Has Meta Description</td>
+                                    <td>
+                                        {% if seo.has_meta_description %}
+                                            <span class="badge badge-success">Yes</span>
+                                            {% if seo.meta_description_length %}({{ seo.meta_description_length }} chars){% endif %}
+                                        {% else %}
+                                            <span class="badge badge-danger">No</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Has Canonical URL</td>
+                                    <td>
+                                        {% if seo.has_canonical_url %}
+                                            <span class="badge badge-success">Yes</span>
+                                        {% else %}
+                                            <span class="badge badge-warning">No</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Has Structured Data</td>
+                                    <td>
+                                        {% if seo.has_structured_data %}
+                                            <span class="badge badge-success">Yes</span>
+                                        {% else %}
+                                            <span class="badge badge-warning">No</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Has Sitemap</td>
+                                    <td>
+                                        {% if seo.has_sitemap %}
+                                            <span class="badge badge-success">Yes</span>
+                                        {% elif seo.has_sitemap is False %}
+                                            <span class="badge badge-warning">No</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">Unknown</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Has Robots.txt</td>
+                                    <td>
+                                        {% if seo.has_robots_txt %}
+                                            <span class="badge badge-success">Yes</span>
+                                        {% elif seo.has_robots_txt is False %}
+                                            <span class="badge badge-warning">No</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">Unknown</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Security Metrics -->
+                {% if security and test.include_security %}
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fa fa-shield-alt"></i> Security Metrics</h5>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-sm">
+                                <tr>
+                                    <td>Uses HTTPS</td>
+                                    <td>
+                                        {% if security.uses_https %}
+                                            <span class="badge badge-success">Yes</span>
+                                        {% else %}
+                                            <span class="badge badge-danger">No</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Content Security Policy</td>
+                                    <td>
+                                        {% if security.has_csp_header %}
+                                            <span class="badge badge-success">Present</span>
+                                        {% else %}
+                                            <span class="badge badge-warning">Missing</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>X-Frame-Options</td>
+                                    <td>
+                                        {% if security.has_x_frame_options %}
+                                            <span class="badge badge-success">Present</span>
+                                        {% else %}
+                                            <span class="badge badge-warning">Missing</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>X-Content-Type-Options</td>
+                                    <td>
+                                        {% if security.has_x_content_type_options %}
+                                            <span class="badge badge-success">Present</span>
+                                        {% else %}
+                                            <span class="badge badge-warning">Missing</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Strict-Transport-Security</td>
+                                    <td>
+                                        {% if security.has_strict_transport_security %}
+                                            <span class="badge badge-success">Present</span>
+                                        {% else %}
+                                            <span class="badge badge-warning">Missing</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- UX Metrics -->
+                {% if ux and test.include_ux %}
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fa fa-mobile-alt"></i> User Experience</h5>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-sm">
+                                <tr>
+                                    <td>Mobile Responsive</td>
+                                    <td>
+                                        {% if ux.is_mobile_responsive %}
+                                            <span class="badge badge-success">Yes</span>
+                                        {% elif ux.is_mobile_responsive is False %}
+                                            <span class="badge badge-danger">No</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">Unknown</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Viewport Meta Tag</td>
+                                    <td>
+                                        {% if ux.viewport_meta_tag %}
+                                            <span class="badge badge-success">Present</span>
+                                        {% else %}
+                                            <span class="badge badge-warning">Missing</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Adequate Touch Targets</td>
+                                    <td>
+                                        {% if ux.adequate_touch_targets %}
+                                            <span class="badge badge-success">Yes</span>
+                                        {% elif ux.adequate_touch_targets is False %}
+                                            <span class="badge badge-warning">No</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">Unknown</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Touch Target Issues</td>
+                                    <td>
+                                        <span class="{% if ux.touch_target_issues == 0 %}text-success{% else %}text-warning{% endif %}">
+                                            {{ ux.touch_target_issues }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Readable Font Sizes</td>
+                                    <td>
+                                        {% if ux.readable_font_sizes %}
+                                            <span class="badge badge-success">Yes</span>
+                                        {% elif ux.readable_font_sizes is False %}
+                                            <span class="badge badge-warning">No</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">Unknown</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Error Metrics -->
+                {% if errors %}
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fa fa-exclamation-triangle"></i> Errors & Issues</h5>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-sm">
+                                <tr>
+                                    <td>JavaScript Errors</td>
+                                    <td>
+                                        <span class="{% if errors.js_errors_count == 0 %}text-success{% else %}text-danger{% endif %}">
+                                            {{ errors.js_errors_count }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>JavaScript Warnings</td>
+                                    <td>
+                                        <span class="{% if errors.js_warnings_count == 0 %}text-success{% else %}text-warning{% endif %}">
+                                            {{ errors.js_warnings_count }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Broken Links</td>
+                                    <td>
+                                        <span class="{% if errors.broken_links_count == 0 %}text-success{% else %}text-danger{% endif %}">
+                                            {{ errors.broken_links_count }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            {% if errors.console_errors %}
+                            <h6 class="mt-3">Console Errors:</h6>
+                            <ul class="list-unstyled">
+                                {% for error in errors.console_errors|slice:":5" %}
+                                <li class="small text-danger">{{ error }}</li>
+                                {% endfor %}
+                                {% if errors.console_errors|length > 5 %}
+                                <li class="small text-muted">... and {{ errors.console_errors|length|add:"-5" }} more</li>
+                                {% endif %}
+                            </ul>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
