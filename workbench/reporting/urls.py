@@ -123,4 +123,9 @@ urlpatterns = [
         work_anniversaries_view,
         name="report_work_anniversaries",
     ),
+    re_path(
+        r"^website-testing/$",
+        lambda request: __import__('django.shortcuts', fromlist=['redirect']).redirect('website_testing:dashboard'),
+        name="report_website_testing",
+    ),
 ]

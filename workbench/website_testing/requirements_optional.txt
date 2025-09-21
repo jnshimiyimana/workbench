@@ -1,0 +1,14 @@
+# Additional requirements for website testing dashboard
+# Add these to your requirements.txt
+
+# For HTTP requests and web scraping
+requests>=2.25.1
+
+# For optional Playwright integration (install separately)
+# playwright>=1.20.0
+
+# For optional Lighthouse integration (requires Node.js)
+# lighthouse (via npm install -g lighthouse)
+
+# For axe-core accessibility testing (via npm)
+# axe-core (via npm install axe-core)

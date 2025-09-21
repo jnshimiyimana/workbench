@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% load bootstrap4 %}
+
+{% block title %}Create Website Test - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Create New Website Test</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="form-group">
+                            <label for="{{ form.url.id_for_label }}">{{ form.url.label }}</label>
+                            {{ form.url }}
+                            {% if form.url.help_text %}
+                                <small class="form-text text-muted">{{ form.url.help_text }}</small>
+                            {% endif %}
+                            {% if form.url.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.url.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label>Test Categories</label>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        {{ form.include_performance }}
+                                        <label class="form-check-label" for="{{ form.include_performance.id_for_label }}">
+                                            <strong>{{ form.include_performance.label }}</strong>
+                                        </label>
+                                        {% if form.include_performance.help_text %}
+                                            <small class="form-text text-muted">{{ form.include_performance.help_text }}</small>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="form-check">
+                                        {{ form.include_accessibility }}
+                                        <label class="form-check-label" for="{{ form.include_accessibility.id_for_label }}">
+                                            <strong>{{ form.include_accessibility.label }}</strong>
+                                        </label>
+                                        {% if form.include_accessibility.help_text %}
+                                            <small class="form-text text-muted">{{ form.include_accessibility.help_text }}</small>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="form-check">
+                                        {{ form.include_seo }}
+                                        <label class="form-check-label" for="{{ form.include_seo.id_for_label }}">
+                                            <strong>{{ form.include_seo.label }}</strong>
+                                        </label>
+                                        {% if form.include_seo.help_text %}
+                                            <small class="form-text text-muted">{{ form.include_seo.help_text }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        {{ form.include_security }}
+                                        <label class="form-check-label" for="{{ form.include_security.id_for_label }}">
+                                            <strong>{{ form.include_security.label }}</strong>
+                                        </label>
+                                        {% if form.include_security.help_text %}
+                                            <small class="form-text text-muted">{{ form.include_security.help_text }}</small>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="form-check">
+                                        {{ form.include_ux }}
+                                        <label class="form-check-label" for="{{ form.include_ux.id_for_label }}">
+                                            <strong>{{ form.include_ux.label }}</strong>
+                                        </label>
+                                        {% if form.include_ux.help_text %}
+                                            <small class="form-text text-muted">{{ form.include_ux.help_text }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <h6><i class="fa fa-info-circle"></i> What will be tested:</h6>
+                            <ul class="mb-0">
+                                <li><strong>Performance:</strong> Page load times, Core Web Vitals (LCP, FID, CLS), resource optimization</li>
+                                <li><strong>Accessibility:</strong> WCAG compliance, color contrast, ARIA labels, screen reader compatibility</li>
+                                <li><strong>SEO:</strong> Meta tags, structured data, sitemap, robots.txt</li>
+                                <li><strong>Security:</strong> HTTPS usage, security headers (CSP, X-Frame-Options, etc.)</li>
+                                <li><strong>UX:</strong> Mobile responsiveness, touch targets, font readability</li>
+                                <li><strong>Errors:</strong> JavaScript console errors, broken links (always included)</li>
+                            </ul>
+                        </div>
+
+                        <div class="form-group text-center">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fa fa-play"></i> Start Test
+                            </button>
+                            <a href="{% url 'website_testing:dashboard' %}" class="btn btn-secondary btn-lg ml-2">
+                                <i class="fa fa-times"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

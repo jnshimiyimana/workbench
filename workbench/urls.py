@@ -34,6 +34,7 @@ urlpatterns = [
     re_path(r"^report/", include("workbench.reporting.urls")),
     re_path(r"", include("workbench.timer.urls")),
     re_path(r"^notes/", include("workbench.notes.urls")),
+    re_path(r"^website-testing/", include("workbench.website_testing.urls")),
     # Legacy URL redirects
     re_path(
         r"^projects/projects/([0-9]+)/$",
